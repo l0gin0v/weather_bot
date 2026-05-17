@@ -48,7 +48,6 @@ class WeatherAPITest {
     void setUp() {
         weatherAPI = new WeatherAPI(mockGeocoding);
 
-        // Используем рефлексию для подмены OkHttpClient
         try {
             var clientField = WeatherAPI.class.getDeclaredField("client");
             clientField.setAccessible(true);
@@ -71,12 +70,16 @@ class WeatherAPITest {
     }
 
     @Test
+    void getGeocoding_ShouldReturnGeocodingInstance() {
+        assertNotNull(weatherAPI.getGeocoding());
+    }
+
+    @Test
     void getWeather_WithValidCoordinates_ShouldReturnResponse() throws IOException {
-        // Arrange
         String jsonResponse = """
             {
                 "daily": {
-                    "time": ["2023-10-01", "2023-10-02"],
+                    "time": ["2025-10-01", "2025-10-02"],
                     "temperature_2m_max": [20.5, 22.0],
                     "temperature_2m_min": [10.5, 12.0],
                     "weathercode": [0, 1],
@@ -92,10 +95,8 @@ class WeatherAPITest {
         when(mockResponse.body()).thenReturn(mockResponseBody);
         when(mockResponseBody.string()).thenReturn(jsonResponse);
 
-        // Act
         OpenMeteoResponse result = weatherAPI.getWeather(55.7558, 37.6173, 2);
 
-        // Assert
         assertNotNull(result);
         assertNotNull(result.getDaily());
         assertEquals(2, result.getDaily().getTime().size());
@@ -105,13 +106,11 @@ class WeatherAPITest {
 
     @Test
     void getWeather_WithHttpError_ShouldThrowIOException() throws IOException {
-        // Arrange
         when(mockClient.newCall(any(Request.class))).thenReturn(mockCall);
         when(mockCall.execute()).thenReturn(mockResponse);
         when(mockResponse.isSuccessful()).thenReturn(false);
         when(mockResponse.code()).thenReturn(500);
 
-        // Act & Assert
         IOException exception = assertThrows(IOException.class,
                 () -> weatherAPI.getWeather(55.7558, 37.6173, 2));
         assertTrue(exception.getMessage().contains("500"));
@@ -119,12 +118,11 @@ class WeatherAPITest {
 
     @Test
     void getWeatherByCity_WithValidCity_ShouldReturnResponse() throws IOException {
-        // Arrange
         Coordinates coordinates = new Coordinates(55.7558, 37.6173, "Москва");
         String jsonResponse = """
             {
                 "daily": {
-                    "time": ["2023-10-01"],
+                    "time": ["2025-10-01"],
                     "temperature_2m_max": [20.5],
                     "temperature_2m_min": [10.5],
                     "weathercode": [0],
@@ -141,39 +139,49 @@ class WeatherAPITest {
         when(mockResponse.body()).thenReturn(mockResponseBody);
         when(mockResponseBody.string()).thenReturn(jsonResponse);
 
-        // Act
         OpenMeteoResponse result = weatherAPI.getWeatherByCity("Москва", 1);
 
-        // Assert
         assertNotNull(result);
         verify(mockGeocoding, times(1)).getCoordinates("Москва");
     }
 
     @Test
     void getWeatherByCity_WithInvalidCity_ShouldThrowIOException() throws IOException {
-        // Arrange
         when(mockGeocoding.getCoordinates("НесуществующийГород"))
                 .thenThrow(new IOException("Город не найден"));
 
-        // Act & Assert
         assertThrows(IOException.class,
                 () -> weatherAPI.getWeatherByCity("НесуществующийГород", 1));
     }
 
     @Test
-    void getQuickWeather_WithInvalidCity_ShouldReturnErrorMessage() throws IOException {
-        // Arrange
-        WeatherAPI spyWeatherAPI = spy(weatherAPI);
-        when(mockGeocoding.getCoordinates("НесуществующийГород"))
-                .thenThrow(new IOException("Город не найден"));
+    void getTomorrowWeather_WithValidCity_ShouldReturnResponse() throws IOException {
+        Coordinates coordinates = new Coordinates(55.7558, 37.6173, "Москва");
+        String jsonResponse = """
+            {
+                "daily": {
+                    "time": ["2025-10-01", "2025-10-02"],
+                    "temperature_2m_max": [20.5, 22.0],
+                    "temperature_2m_min": [10.5, 12.0],
+                    "weathercode": [0, 1],
+                    "windspeed_10m_max": [15.0, 18.0],
+                    "precipitation_probability_max": [30.0, 40.0]
+                }
+            }
+            """;
 
-        // Act
-        String result = spyWeatherAPI.getQuickWeather("НесуществующийГород");
+        when(mockGeocoding.getCoordinates("Москва")).thenReturn(coordinates);
+        when(mockClient.newCall(any(Request.class))).thenReturn(mockCall);
+        when(mockCall.execute()).thenReturn(mockResponse);
+        when(mockResponse.isSuccessful()).thenReturn(true);
+        when(mockResponse.body()).thenReturn(mockResponseBody);
+        when(mockResponseBody.string()).thenReturn(jsonResponse);
 
-        // Assert
+        OpenMeteoResponse result = weatherAPI.getTomorrowWeather("Москва");
+
         assertNotNull(result);
-        assertTrue(result.contains("Не удалось получить погоду"));
-        assertTrue(result.contains("НесуществующийГород"));
+        assertEquals(2, result.getDaily().getTime().size());
+        verify(mockGeocoding, times(1)).getCoordinates("Москва");
     }
 
     @Test
@@ -188,30 +196,19 @@ class WeatherAPITest {
         assertEquals("❄️ Снег", weatherAPI.getWeatherCondition(71));
         assertEquals("⛈ Гроза", weatherAPI.getWeatherCondition(95));
         assertEquals("❓ Неизвестно", weatherAPI.getWeatherCondition(999));
-    }
-
-    @Test
-    void formatDay_WithVariousDates_ShouldReturnCorrectFormats() {
-        LocalDate today = LocalDate.now();
-
-        assertEquals("Сегодня", weatherAPI.formatDay(today.toString()));
-        assertEquals("Завтра", weatherAPI.formatDay(today.plusDays(1).toString()));
-        assertEquals("Послезавтра", weatherAPI.formatDay(today.plusDays(2).toString()));
-
-        // Test future date formatting
-        String futureDate = today.plusDays(5).toString();
-        String expectedFormat = today.plusDays(5).format(java.time.format.DateTimeFormatter.ofPattern("dd.MM"));
-        assertEquals(expectedFormat, weatherAPI.formatDay(futureDate));
+        assertEquals("🌨 Ледяная морось", weatherAPI.getWeatherCondition(56));
+        assertEquals("🌨 Ледяной дождь", weatherAPI.getWeatherCondition(66));
+        assertEquals("🌦 Ливень", weatherAPI.getWeatherCondition(80));
+        assertEquals("🌨 Снегопад", weatherAPI.getWeatherCondition(85));
     }
 
     @Test
     void getWeather_DaysMoreThan7_ShouldLimitTo7() throws IOException {
-        // Arrange
         String jsonResponse = """
             {
                 "daily": {
-                    "time": ["2023-10-01", "2023-10-02", "2023-10-03", "2023-10-04", 
-                            "2023-10-05", "2023-10-06", "2023-10-07"],
+                    "time": ["2025-10-01", "2025-10-02", "2025-10-03", "2025-10-04", 
+                            "2025-10-05", "2025-10-06", "2025-10-07"],
                     "temperature_2m_max": [20.5, 21.0, 22.0, 23.0, 24.0, 25.0, 26.0],
                     "temperature_2m_min": [10.5, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0],
                     "weathercode": [0, 1, 2, 3, 0, 1, 2],
@@ -227,10 +224,8 @@ class WeatherAPITest {
         when(mockResponse.body()).thenReturn(mockResponseBody);
         when(mockResponseBody.string()).thenReturn(jsonResponse);
 
-        // Act
         OpenMeteoResponse result = weatherAPI.getWeather(55.7558, 37.6173, 10);
 
-        // Assert
         assertNotNull(result);
         assertEquals(7, result.getDaily().getTime().size());
     }

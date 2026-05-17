@@ -35,8 +35,9 @@ class KeyboardFactoryTest {
         assertEquals("🏙 Популярные города", row3.get(1).getText());
 
         KeyboardRow row4 = keyboardRows.get(3);
-        assertEquals("/help", row4.get(0).getText());
-        assertEquals("/quit", row4.get(1).getText());
+        assertEquals("🔔 Уведомления", row4.get(0).getText());
+        assertEquals("/help", row4.get(1).getText());
+        assertEquals("/quit", row4.get(2).getText());
     }
 
     @Test
@@ -56,6 +57,14 @@ class KeyboardFactoryTest {
         KeyboardRow row2 = keyboardRows.get(1);
         assertEquals("Новосибирск", row2.get(0).getText());
         assertEquals("Екатеринбург", row2.get(1).getText());
+
+        KeyboardRow row3 = keyboardRows.get(2);
+        assertEquals("Казань", row3.get(0).getText());
+        assertEquals("Нижний Новгород", row3.get(1).getText());
+
+        KeyboardRow row4 = keyboardRows.get(3);
+        assertEquals("Сочи", row4.get(0).getText());
+        assertEquals("Владивосток", row4.get(1).getText());
 
         KeyboardRow row5 = keyboardRows.get(4);
         assertEquals("↩️ Назад", row5.get(0).getText());
@@ -109,6 +118,12 @@ class KeyboardFactoryTest {
         assertEquals("СПб", row1.get(1).getText());
         assertEquals("city_spb", row1.get(1).getCallbackData());
 
+        List<InlineKeyboardButton> row2 = rows.get(1);
+        assertEquals("Новосибирск", row2.get(0).getText());
+        assertEquals("city_novosibirsk", row2.get(0).getCallbackData());
+        assertEquals("Екатеринбург", row2.get(1).getText());
+        assertEquals("city_ekb", row2.get(1).getCallbackData());
+
         List<InlineKeyboardButton> row3 = rows.get(2);
         assertEquals("Казань", row3.get(0).getText());
         assertEquals("city_kazan", row3.get(0).getCallbackData());
@@ -146,5 +161,24 @@ class KeyboardFactoryTest {
         assertEquals(2, row.size());
         assertEquals("/start", row.get(0).getText());
         assertEquals("🌤 Погода", row.get(1).getText());
+    }
+
+    @Test
+    void createNotificationKeyboard_ShouldCreateNotificationButtons() {
+        ReplyKeyboardMarkup keyboard = KeyboardFactory.createNotificationKeyboard();
+
+        assertTrue(keyboard.getResizeKeyboard());
+        assertFalse(keyboard.getOneTimeKeyboard());
+
+        List<KeyboardRow> keyboardRows = keyboard.getKeyboard();
+        assertEquals(2, keyboardRows.size());
+
+        KeyboardRow row1 = keyboardRows.get(0);
+        assertEquals("⏰ Установить время", row1.get(0).getText());
+        assertEquals("ℹ️ Информация", row1.get(1).getText());
+
+        KeyboardRow row2 = keyboardRows.get(1);
+        assertEquals("❌ Отменить", row2.get(0).getText());
+        assertEquals("↩️ Назад", row2.get(1).getText());
     }
 }

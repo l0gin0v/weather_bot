@@ -32,8 +32,9 @@ public class KeyboardFactory {
         row3.add("📍 Сменить город");
         row3.add("🏙 Популярные города");
 
-        // Четвертый ряд - команды
+        // Четвертый ряд - ДОБАВЛЯЕМ уведомления
         KeyboardRow row4 = new KeyboardRow();
+        row4.add("🔔 Уведомления");
         row4.add("/help");
         row4.add("/quit");
 
@@ -185,6 +186,28 @@ public class KeyboardFactory {
         row.add("🌤 Погода");
 
         keyboard.add(row);
+        keyboardMarkup.setKeyboard(keyboard);
+        return keyboardMarkup;
+    }
+
+    public static ReplyKeyboardMarkup createNotificationKeyboard() {
+        ReplyKeyboardMarkup keyboardMarkup = new ReplyKeyboardMarkup();
+        keyboardMarkup.setResizeKeyboard(true);
+        keyboardMarkup.setOneTimeKeyboard(false);
+
+        List<KeyboardRow> keyboard = new ArrayList<>();
+
+        KeyboardRow row1 = new KeyboardRow();
+        row1.add("⏰ Установить время");
+        row1.add("ℹ️ Информация");
+
+        KeyboardRow row2 = new KeyboardRow();
+        row2.add("❌ Отменить");
+        row2.add("↩️ Назад");
+
+        keyboard.add(row1);
+        keyboard.add(row2);
+
         keyboardMarkup.setKeyboard(keyboard);
         return keyboardMarkup;
     }

@@ -50,7 +50,6 @@ public class WeatherFormatter {
 
     public String formatTomorrowWeather(String city) throws Exception {
         OpenMeteoResponse response = weatherAPI.getTomorrowWeather(city);
-        Coordinates coords = weatherAPI.getGeocoding().getCoordinates(city);
 
         StringBuilder weatherText = new StringBuilder();
         weatherText.append(String.format("📅 Погода в %s на завтра:\n\n", city));
